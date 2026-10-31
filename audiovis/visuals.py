@@ -61,7 +61,7 @@ class RadialVisual:
         gain = height_gain(look)
         prims = []
         rainbow = look.mode == colors.MODE_RAINBOW
-        cross = m * 0.24
+        cross = m * 0.2
         far = width / 2.0
         shell = max_len / SHELLS
         for i in range(BANDS):
@@ -184,7 +184,7 @@ class WaveRadialVisual(RadialVisual):
         amp_px = m * 0.16 * min(height_gain(look), 2.0) * level
         cy = height / 2.0
         stroke = 1.0 if pixel else max(1.5, m / 200.0)
-        cross = m * 0.24
+        cross = m * 0.2
         half = width / 2.0
         ys = []
         for i in range(n):

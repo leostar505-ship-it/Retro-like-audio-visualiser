@@ -270,15 +270,15 @@ def test_sensitivity_floor_shrinks_bars():
     assert bar_extent(0.05) < bar_extent(1.6)
 
 
-def test_rainbow_waveform_is_red_in_middle_cyan_near_circle_and_pink_at_ends():
+def test_rainbow_waveform_red_middle_pink_at_circle_edge_back_to_red_at_ends():
     prims = run_wave(100.0, mode=colors.MODE_RAINBOW, width=600, height=400)
-    cross = 400 * 0.24
+    cross = 400 * 0.2
     mid = min(prims, key=lambda p: abs((p.a + p.c) / 2 - 300))
     at_circle = min(prims, key=lambda p: abs(abs((p.a + p.c) / 2 - 300) - cross))
     end = min(prims, key=lambda p: (p.a + p.c) / 2)
     assert mid.rgb[0] > 200 and mid.rgb[1] < 90 and mid.rgb[2] < 90
-    assert at_circle.rgb[1] > 200 and at_circle.rgb[2] > 120 and at_circle.rgb[0] < 120
-    assert end.rgb[0] > 200 and end.rgb[2] > 100 and end.rgb[1] < 110
+    assert at_circle.rgb[0] > 200 and at_circle.rgb[2] > 100 and at_circle.rgb[1] < 110
+    assert end.rgb[0] > 200 and end.rgb[1] < 110 and end.rgb[2] < 110
 
 
 def test_rainbow_radial_bars_match_waveform_gradient_by_horizontal_position():
@@ -297,7 +297,7 @@ def test_rainbow_radial_bars_match_waveform_gradient_by_horizontal_position():
     side = max(segs, key=dx)
     assert centre.rgb != side.rgb
     assert centre.rgb[0] > centre.rgb[1] and centre.rgb[0] > centre.rgb[2]
-    assert side.rgb == colors.wave_rgb(dx(side), 600 * 0.24, 300.0) or side.rgb[1] > side.rgb[0]
+    assert side.rgb == colors.wave_rgb(dx(side), 600 * 0.2, 300.0)
 
 
 def test_rainbow_ring_is_not_one_flat_colour():
