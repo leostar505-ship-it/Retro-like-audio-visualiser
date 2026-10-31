@@ -21,6 +21,7 @@ MUTED = "#99a0b0"
 
 VISUAL_LABELS = {
     "radial_wave": "Radial spectrum + bass ring + waveform",
+    "wave": "Waveform only",
     "radial": "Radial spectrum + bass ring",
     "bars": "Mirrored peak-hold bars",
 }

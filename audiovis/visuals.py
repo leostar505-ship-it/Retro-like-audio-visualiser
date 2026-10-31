@@ -21,6 +21,7 @@ def ring(cx, cy, radius, width, rgb, alpha):
 
 SHELLS = 6
 BAR_SHELLS = 8
+RING_SEGS = 72
 
 
 def height_gain(look):
@@ -61,9 +62,8 @@ class RadialVisual:
         prims = []
         rainbow = look.mode == colors.MODE_RAINBOW
         cross = m * 0.24
-        far = m * 0.56
+        far = width / 2.0
         shell = max_len / SHELLS
-        shell_rgb = [colors.wave_rgb(m * 0.2 + (k + 0.5) * shell, cross, far) for k in range(SHELLS + 1)]
         for i in range(BANDS):
             length = min(1.0, an.vals[i] * gain) * max_len + min_len
             ang = (i + 0.5) / BANDS * math.pi - math.pi / 2.0
@@ -76,8 +76,9 @@ class RadialVisual:
                     s1 = min((k + 1) * shell, length)
                     ya = cy + sin_a * (r0 + s0)
                     yb = cy + sin_a * (r0 + s1)
-                    prims.append(line(cx - cos_a * (r0 + s0), ya, cx - cos_a * (r0 + s1), yb, bar_w, shell_rgb[k]))
-                    prims.append(line(cx + cos_a * (r0 + s0), ya, cx + cos_a * (r0 + s1), yb, bar_w, shell_rgb[k]))
+                    rgb = colors.wave_rgb(abs(cos_a) * (r0 + (s0 + s1) / 2.0), cross, far)
+                    prims.append(line(cx - cos_a * (r0 + s0), ya, cx - cos_a * (r0 + s1), yb, bar_w, rgb))
+                    prims.append(line(cx + cos_a * (r0 + s0), ya, cx + cos_a * (r0 + s1), yb, bar_w, rgb))
             else:
                 y0 = cy + sin_a * r0
                 y1 = cy + sin_a * (r0 + length)
@@ -93,10 +94,17 @@ class RadialVisual:
             self.ring_a -= 3.0 * dt / math.sqrt(max(0.25, look.ring))
         if self.ring_a > 0.0:
             if rainbow:
-                base = colors.wave_rgb(self.ring_r, cross, far)
+                n = RING_SEGS
+                for j in range(n):
+                    a0 = 2.0 * math.pi * j / n
+                    a1 = 2.0 * math.pi * (j + 1) / n
+                    rgb = colors.wave_rgb(self.ring_r * math.cos((a0 + a1) / 2.0), cross, far)
+                    prims.append(line(cx + self.ring_r * math.cos(a0), cy + self.ring_r * math.sin(a0),
+                                      cx + self.ring_r * math.cos(a1), cy + self.ring_r * math.sin(a1),
+                                      ring_w, rgb, self.ring_a))
             else:
                 base = colors.ring_rgb(look.mode, self.ring_v, look.fixed)
-            prims.append(ring(cx, cy, self.ring_r, ring_w, base, self.ring_a))
+                prims.append(ring(cx, cy, self.ring_r, ring_w, base, self.ring_a))
         return prims
 
 
@@ -200,4 +208,11 @@ class WaveRadialVisual(RadialVisual):
         return wave + super().frame(width, height, dt, an, look, pixel)
 
 
-VISUALS = {"radial_wave": WaveRadialVisual, "radial": RadialVisual, "bars": BarsVisual}
+class WaveVisual(WaveRadialVisual):
+    """Waveform only: the clean drone sine, no bars or bass ring."""
+
+    def frame(self, width, height, dt, an, look, pixel):
+        return self.wave_prims(width, height, dt, an, look, pixel)
+
+
+VISUALS = {"wave": WaveVisual, "radial_wave": WaveRadialVisual, "radial": RadialVisual, "bars": BarsVisual}

@@ -1,10 +1,11 @@
 # Audio Visualiser
 
-A Windows app that listens to everything your PC is playing (games, music, Discord, all of it) and draws it live as one of three visuals:
+A Windows app that listens to everything your PC is playing (games, music, Discord, all of it) and draws it live as one of four visuals:
 
 - **Radial spectrum + bass ring + waveform** (default): the radial spectrum below with a clean sine wave through the middle that follows the single strongest tone in the audio. The Line smoothness slider decides how quickly it follows changes.
 - **Radial spectrum + bass ring**: 32 frequency bars around a circle that pulses with the bass, with a ring that shoots out on each beat.
 - **Mirrored peak-hold bars**: bars grow from the centre line in both directions, with peak dots that fall slowly.
+- **Waveform only**: just the clean sine line that follows the strongest tone, nothing else.
 
 It captures audio with WASAPI loopback, so nothing needs to be routed through a virtual cable and the visualiser ignores your volume knob.
 
@@ -88,11 +89,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.4.1` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.4.2` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.4.2
+git push origin v0.4.2
 ```
 
 ## Tests

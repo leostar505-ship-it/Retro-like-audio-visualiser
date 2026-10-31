@@ -7,7 +7,7 @@ from .colors import MODE_RAINBOW, MODES, parse_hex
 from .analysis import DEFAULT_TRIGGER, TRIGGERS
 from .screens import DEFAULT_SCREEN, SCREENS
 
-VISUALS = ("radial_wave", "radial", "bars")
+VISUALS = ("radial_wave", "radial", "bars", "wave")
 DEFAULT_VISUAL = "radial_wave"
 DEFAULT_HEX = "#ff0000"
 SENS_MIN = 0.05

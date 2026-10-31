@@ -21,7 +21,7 @@ def pump(root, seconds):
         time.sleep(0.005)
 
 
-@pytest.mark.parametrize("visual", ["radial_wave", "radial", "bars"])
+@pytest.mark.parametrize("visual", ["radial_wave", "wave", "radial", "bars"])
 @pytest.mark.parametrize("mode", ["loudness", "custom", "rainbow"])
 def test_app_renders_each_visual_and_colour_mode(visual, mode):
     from audiovis.app import App
@@ -38,7 +38,7 @@ def test_app_renders_each_visual_and_colour_mode(visual, mode):
 
 
 @pytest.mark.parametrize("screen", ["full", "oled", "oled-colour", "tft-160", "tft-240", "tft-320", "tft-480"])
-@pytest.mark.parametrize("visual", ["radial_wave", "radial", "bars"])
+@pytest.mark.parametrize("visual", ["radial_wave", "wave", "radial", "bars"])
 def test_app_renders_every_screen_preset(screen, visual):
     from audiovis.app import App
 
@@ -114,6 +114,8 @@ def test_visual_cycle_and_controls_toggle():
     cfg = Settings().sanitise()
     app = App(root, DemoSource(), cfg, persist=False)
     pump(root, 0.2)
+    app.cycle_visual()
+    assert cfg.visual == "wave"
     app.cycle_visual()
     assert cfg.visual == "radial"
     app.cycle_visual()

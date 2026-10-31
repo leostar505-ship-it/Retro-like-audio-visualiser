@@ -281,19 +281,42 @@ def test_rainbow_waveform_is_red_in_middle_cyan_near_circle_and_pink_at_ends():
     assert end.rgb[0] > 200 and end.rgb[2] > 100 and end.rgb[1] < 110
 
 
-def test_rainbow_radial_bars_shift_from_red_near_centre_toward_pink_further_out():
+def test_rainbow_radial_bars_match_waveform_gradient_by_horizontal_position():
     an = active_analyser()
     an.vals = np.ones(BANDS)
     look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
     prims = RadialVisual().frame(600, 600, 1 / 60, an, look, False)
     segs = [p for p in prims if p.kind == "line"]
     assert len(segs) > 64 * 2
-    cx = cy = 300.0
+    cx = 300.0
 
-    def dist(p):
-        return math.hypot((p.a + p.c) / 2 - cx, (p.b + p.d) / 2 - cy)
+    def dx(p):
+        return abs((p.a + p.c) / 2 - cx)
 
-    near = min(segs, key=dist)
-    far = max(segs, key=dist)
-    assert near.rgb != far.rgb
-    assert far.rgb[0] > far.rgb[1] and far.rgb[2] > far.rgb[1]
+    centre = min(segs, key=dx)
+    side = max(segs, key=dx)
+    assert centre.rgb != side.rgb
+    assert centre.rgb[0] > centre.rgb[1] and centre.rgb[0] > centre.rgb[2]
+    assert side.rgb == colors.wave_rgb(dx(side), 600 * 0.24, 300.0) or side.rgb[1] > side.rgb[0]
+
+
+def test_rainbow_ring_is_not_one_flat_colour():
+    an = active_analyser()
+    an.beat = True
+    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
+    prims = RadialVisual().frame(600, 600, 1 / 60, an, look, False)
+    colours = {p.rgb for p in prims if p.kind == "line" and p.alpha == 1.0 and p.w > 0}
+    assert len(colours) > 3
+
+
+def test_wave_only_visual_draws_just_the_waveform():
+    from audiovis.visuals import WaveVisual
+
+    an = active_analyser()
+    an.beat = True
+    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
+    prims = WaveVisual().frame(600, 400, 1 / 60, an, look, False)
+    assert prims and all(p.kind == "line" for p in prims)
+    xs = [p.a for p in prims] + [p.c for p in prims]
+    assert min(xs) < 5 and max(xs) > 590
+    assert all(abs(p.b - 200) < 80 and abs(p.d - 200) < 80 for p in prims)
