@@ -30,12 +30,42 @@ def rainbow_rgb(index, count):
     return hsl_to_rgb(index / count * 300.0, 90.0, 55.0)
 
 
+# Rainbow tuned in the colour preview: (weight, hue) from the centre to the circle edge.
+RAINBOW_STOPS = ((1.95, 0.0), (3.0, 60.0), (0.95, 120.0), (4.0, 180.0), (1.35, 240.0), (0.05, 285.0), (0.05, 330.0))
+RAINBOW_BACK = 1.0  # share of the distance outside the circle taken to go from pink back to red
+
+
+def _rainbow_centres():
+    total = sum(w for w, _ in RAINBOW_STOPS)
+    acc = 0.0
+    out = []
+    for w, _ in RAINBOW_STOPS:
+        out.append((acc + w / 2.0) / total)
+        acc += w
+    return out
+
+
+_CENTRES = _rainbow_centres()
+
+
+def rainbow_hue(t):
+    """Hue for t = distance from the centre as a fraction of the circle radius (0 to 1)."""
+    if t <= _CENTRES[0]:
+        return RAINBOW_STOPS[0][1]
+    for i in range(1, len(_CENTRES)):
+        if t <= _CENTRES[i]:
+            u = (t - _CENTRES[i - 1]) / (_CENTRES[i] - _CENTRES[i - 1])
+            h0 = RAINBOW_STOPS[i - 1][1]
+            return h0 + u * (RAINBOW_STOPS[i][1] - h0)
+    return RAINBOW_STOPS[-1][1]
+
+
 def wave_rgb(dx, crossing, half):
     d = abs(dx)
     if d <= crossing:
-        hue = 330.0 * (d / max(crossing, 1e-6)) ** 1.7
+        hue = rainbow_hue(d / max(crossing, 1e-6))
     else:
-        hue = 330.0 + 30.0 * min(1.0, (d - crossing) / max(0.3 * (half - crossing), 1e-6))
+        hue = 330.0 + 30.0 * min(1.0, (d - crossing) / max(RAINBOW_BACK * (half - crossing), 1e-6))
     return hsl_to_rgb(hue, 90.0, 55.0)
 
 

@@ -317,3 +317,21 @@ def test_wave_only_visual_draws_just_the_waveform():
     xs = [p.a for p in prims] + [p.c for p in prims]
     assert min(xs) < 5 and max(xs) > 590
     assert all(abs(p.b - 200) < 80 and abs(p.d - 200) < 80 for p in prims)
+
+
+def test_rainbow_ring_keeps_the_circle_colours_as_it_expands():
+    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
+
+    def ring_colours(radius):
+        an = active_analyser()
+        vis = RadialVisual()
+        vis.ring_a = 1.0
+        vis.ring_r = radius
+        an.beat = False
+        prims = vis.frame(600, 600, 0.0, an, look, False)
+        return [p.rgb for p in prims if p.kind == "line"][BANDS * 2:]
+
+    near = ring_colours(120.0)
+    far = ring_colours(260.0)
+    assert len(near) == len(far) > 0
+    assert near == far

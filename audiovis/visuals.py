@@ -69,7 +69,7 @@ class RadialVisual:
             cos_a = math.cos(ang)
             sin_a = math.sin(ang)
             if rainbow:
-                rgb = colors.wave_rgb(abs(cos_a) * r0, cross, far)
+                rgb = colors.wave_rgb(abs(cos_a) * cross, cross, far)
                 ya = cy + sin_a * r0
                 yb = cy + sin_a * (r0 + length)
                 prims.append(line(cx - cos_a * r0, ya, cx - cos_a * (r0 + length), yb, bar_w, rgb))
@@ -93,7 +93,7 @@ class RadialVisual:
                 for j in range(n):
                     a0 = 2.0 * math.pi * j / n
                     a1 = 2.0 * math.pi * (j + 1) / n
-                    rgb = colors.wave_rgb(self.ring_r * math.cos((a0 + a1) / 2.0), cross, far)
+                    rgb = colors.wave_rgb(cross * math.cos((a0 + a1) / 2.0), cross, far)
                     prims.append(line(cx + self.ring_r * math.cos(a0), cy + self.ring_r * math.sin(a0),
                                       cx + self.ring_r * math.cos(a1), cy + self.ring_r * math.sin(a1),
                                       ring_w, rgb, self.ring_a))
