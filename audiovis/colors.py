@@ -31,8 +31,8 @@ def rainbow_rgb(index, count):
 
 
 # Rainbow tuned in the colour preview: (weight, hue) from the centre to the circle edge.
-RAINBOW_STOPS = ((1.95, 0.0), (3.0, 60.0), (0.95, 120.0), (4.0, 180.0), (1.35, 240.0), (0.05, 285.0), (0.05, 330.0))
-RAINBOW_BACK = 1.0  # share of the distance outside the circle taken to go from pink back to red
+RAINBOW_STOPS = ((1.0, 0.0), (0.8, 60.0), (0.8, 120.0), (0.8, 180.0), (1.8, 240.0), (0.6, 285.0), (0.25, 330.0))
+RAINBOW_BACK = 0.55  # share of the distance outside the circle taken to go from pink back to red
 
 
 def _rainbow_centres():
