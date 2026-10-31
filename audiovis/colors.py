@@ -33,9 +33,9 @@ def rainbow_rgb(index, count):
 def wave_rgb(dx, crossing, half):
     d = abs(dx)
     if d <= crossing:
-        hue = 330.0 * d / max(crossing, 1e-6)
+        hue = 330.0 * (d / max(crossing, 1e-6)) ** 1.7
     else:
-        hue = 330.0 + 30.0 * min(1.0, (d - crossing) / max(half - crossing, 1e-6))
+        hue = 330.0 + 30.0 * min(1.0, (d - crossing) / max(0.3 * (half - crossing), 1e-6))
     return hsl_to_rgb(hue, 90.0, 55.0)
 
 
