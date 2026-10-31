@@ -281,23 +281,20 @@ def test_rainbow_waveform_red_middle_pink_at_circle_edge_back_to_red_at_ends():
     assert end.rgb[0] > 200 and end.rgb[1] < 110 and end.rgb[2] < 110
 
 
-def test_rainbow_radial_bars_match_waveform_gradient_by_horizontal_position():
-    an = active_analyser()
-    an.vals = np.ones(BANDS)
+def test_rainbow_radial_bars_are_one_colour_each_whatever_their_length():
     look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
-    prims = RadialVisual().frame(600, 600, 1 / 60, an, look, False)
-    segs = [p for p in prims if p.kind == "line"]
-    assert len(segs) > 64 * 2
-    cx = 300.0
 
-    def dx(p):
-        return abs((p.a + p.c) / 2 - cx)
+    def bar_colours(level):
+        an = active_analyser()
+        an.vals = np.full(BANDS, level)
+        prims = RadialVisual().frame(600, 600, 1 / 60, an, look, False)
+        return [p.rgb for p in prims if p.kind == "line"][: BANDS * 2]
 
-    centre = min(segs, key=dx)
-    side = max(segs, key=dx)
-    assert centre.rgb != side.rgb
-    assert centre.rgb[0] > centre.rgb[1] and centre.rgb[0] > centre.rgb[2]
-    assert side.rgb == colors.wave_rgb(dx(side), 600 * 0.2, 300.0)
+    short = bar_colours(0.05)
+    tall = bar_colours(1.0)
+    assert len(short) == len(tall) == BANDS * 2
+    assert short == tall
+    assert len(set(tall)) > 3
 
 
 def test_rainbow_ring_is_not_one_flat_colour():

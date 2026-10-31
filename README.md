@@ -89,11 +89,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.4.3` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.4.4` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.4.3
-git push origin v0.4.3
+git tag v0.4.4
+git push origin v0.4.4
 ```
 
 ## Tests

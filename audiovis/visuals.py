@@ -63,22 +63,17 @@ class RadialVisual:
         rainbow = look.mode == colors.MODE_RAINBOW
         cross = m * 0.2
         far = width / 2.0
-        shell = max_len / SHELLS
         for i in range(BANDS):
             length = min(1.0, an.vals[i] * gain) * max_len + min_len
             ang = (i + 0.5) / BANDS * math.pi - math.pi / 2.0
             cos_a = math.cos(ang)
             sin_a = math.sin(ang)
             if rainbow:
-                count = min(SHELLS + 1, max(1, int(math.ceil(length / shell))))
-                for k in range(count):
-                    s0 = k * shell
-                    s1 = min((k + 1) * shell, length)
-                    ya = cy + sin_a * (r0 + s0)
-                    yb = cy + sin_a * (r0 + s1)
-                    rgb = colors.wave_rgb(abs(cos_a) * (r0 + (s0 + s1) / 2.0), cross, far)
-                    prims.append(line(cx - cos_a * (r0 + s0), ya, cx - cos_a * (r0 + s1), yb, bar_w, rgb))
-                    prims.append(line(cx + cos_a * (r0 + s0), ya, cx + cos_a * (r0 + s1), yb, bar_w, rgb))
+                rgb = colors.wave_rgb(abs(cos_a) * r0, cross, far)
+                ya = cy + sin_a * r0
+                yb = cy + sin_a * (r0 + length)
+                prims.append(line(cx - cos_a * r0, ya, cx - cos_a * (r0 + length), yb, bar_w, rgb))
+                prims.append(line(cx + cos_a * r0, ya, cx + cos_a * (r0 + length), yb, bar_w, rgb))
             else:
                 y0 = cy + sin_a * r0
                 y1 = cy + sin_a * (r0 + length)
