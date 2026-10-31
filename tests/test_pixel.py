@@ -197,3 +197,63 @@ def test_ring_slider_makes_ring_thicker_in_pixel_mode():
         return [p.w for p in prims if p.kind == "ring"][0]
 
     assert ring_width(3.0) > ring_width(0.5)
+
+
+def wave_an(freq, amp=0.6, n=2048):
+    from audiovis.analysis import TARGET_RATE
+
+    an = Analyser()
+    t = np.arange(n) / TARGET_RATE
+    an.wave = (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+    an.vals = np.zeros(BANDS)
+    return an
+
+
+def wave_ys(smooth, sens=1.6, samples=None):
+    from audiovis.visuals import WaveRadialVisual
+
+    vis = WaveRadialVisual()
+    an = wave_an(80)
+    if samples is not None:
+        an.wave = samples
+    look = Look(colors.MODE_FIXED, (255, 0, 0), sens, 1.6, smooth)
+    prims = []
+    for _ in range(30):
+        prims = vis.wave_prims(400, 300, 1 / 60, an, look, False)
+    return np.array([p.b for p in prims]), prims
+
+
+def test_waveform_follows_a_low_drone_and_is_centred():
+    ys, prims = wave_ys(0.5)
+    assert ys.max() - ys.min() > 20
+    assert abs(ys.mean() - 150) < 15
+    assert len(prims) > 10
+
+
+def test_waveform_smoothness_removes_high_frequency_detail():
+    from audiovis.analysis import TARGET_RATE
+
+    t = np.arange(2048) / TARGET_RATE
+    mix = (0.5 * np.sin(2 * np.pi * 70 * t) + 0.3 * np.sin(2 * np.pi * 2600 * t)).astype(np.float32)
+    rough, _ = wave_ys(0.0, samples=mix)
+    smooth, _ = wave_ys(1.0, samples=mix)
+    assert np.abs(np.diff(smooth)).sum() < np.abs(np.diff(rough)).sum()
+
+
+def test_waveform_is_flat_in_silence_and_sensitivity_scales_it():
+    quiet, _ = wave_ys(0.5, samples=np.zeros(2048, dtype=np.float32))
+    assert np.ptp(quiet) < 1.0
+    low, _ = wave_ys(0.5, sens=0.05)
+    high, _ = wave_ys(0.5, sens=3.0)
+    assert np.ptp(low) < np.ptp(high)
+
+
+def test_sensitivity_floor_shrinks_bars():
+    def bar_extent(sens):
+        an = active_analyser()
+        an.vals = np.ones(BANDS)
+        look = Look(colors.MODE_FIXED, (255, 0, 0), sens)
+        prims = RadialVisual().frame(300, 300, 1 / 60, an, look, False)
+        return max(p.c for p in prims if p.kind == "line") - 150
+
+    assert bar_extent(0.05) < bar_extent(1.6)

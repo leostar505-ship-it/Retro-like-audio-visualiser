@@ -67,25 +67,37 @@ def test_settings_sanitise_bad_values(tmp_path):
         '{"visual": "nope", "screen": "huge", "colour_mode": 7, "hex": "zzz", "sensitivity": 99, "width": "x", "extra": 1}'
     )
     loaded = store.load(path)
-    assert loaded.visual == "radial"
+    assert loaded.visual == "radial_wave"
     assert loaded.screen == "full"
-    assert loaded.colour_mode == colors.MODE_LOUDNESS
+    assert loaded.colour_mode == colors.MODE_RAINBOW
     assert loaded.hex == store.DEFAULT_HEX
     assert loaded.sensitivity == 3.0
     assert loaded.width == 900
 
 
 def test_settings_missing_or_corrupt_file(tmp_path):
-    assert store.load(tmp_path / "missing.json").visual == "radial"
+    assert store.load(tmp_path / "missing.json").visual == "radial_wave"
     bad = tmp_path / "bad.json"
     bad.write_text("not json")
-    assert store.load(bad).visual == "radial"
+    assert store.load(bad).visual == "radial_wave"
 
 
 def test_ring_setting_is_clamped_and_defaults():
     s = store.Settings(ring=99).sanitise()
-    assert s.ring == 3.0
+    assert s.ring == 8.0
     s = store.Settings(ring=0).sanitise()
     assert s.ring == 0.5
     s = store.Settings(ring="bad").sanitise()
     assert s.ring == 1.6
+
+
+def test_new_defaults_and_ranges():
+    s = store.Settings().sanitise()
+    assert s.visual == "radial_wave"
+    assert s.colour_mode == colors.MODE_RAINBOW
+    assert s.hex == "#ff0000"
+    assert store.Settings(sensitivity=0).sanitise().sensitivity == store.SENS_MIN
+    assert store.SENS_MIN <= 0.05
+    assert store.Settings(smooth=5).sanitise().smooth == 1.0
+    assert store.Settings(smooth=-1).sanitise().smooth == 0.0
+    assert store.Settings(smooth="x").sanitise().smooth == 0.5

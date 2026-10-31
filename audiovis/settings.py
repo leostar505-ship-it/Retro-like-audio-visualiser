@@ -3,21 +3,27 @@ import os
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
-from .colors import MODE_LOUDNESS, MODES, parse_hex
+from .colors import MODE_RAINBOW, MODES, parse_hex
 from .screens import DEFAULT_SCREEN, SCREENS
 
-VISUALS = ("radial", "bars")
-DEFAULT_HEX = "#ff2d95"
+VISUALS = ("radial_wave", "radial", "bars")
+DEFAULT_VISUAL = "radial_wave"
+DEFAULT_HEX = "#ff0000"
+SENS_MIN = 0.05
+SENS_MAX = 3.0
+RING_MIN = 0.5
+RING_MAX = 8.0
 
 
 @dataclass
 class Settings:
-    visual: str = "radial"
+    visual: str = DEFAULT_VISUAL
     screen: str = DEFAULT_SCREEN
-    colour_mode: str = MODE_LOUDNESS
+    colour_mode: str = MODE_RAINBOW
     hex: str = DEFAULT_HEX
     sensitivity: float = 1.6
     ring: float = 1.6
+    smooth: float = 0.5
     normalise: bool = True
     topmost: bool = False
     controls: bool = True
@@ -27,21 +33,25 @@ class Settings:
 
     def sanitise(self):
         if self.visual not in VISUALS:
-            self.visual = "radial"
+            self.visual = DEFAULT_VISUAL
         if self.screen not in SCREENS:
             self.screen = DEFAULT_SCREEN
         if self.colour_mode not in MODES:
-            self.colour_mode = MODE_LOUDNESS
+            self.colour_mode = MODE_RAINBOW
         if not isinstance(self.hex, str) or parse_hex(self.hex) is None:
             self.hex = DEFAULT_HEX
         try:
-            self.sensitivity = min(3.0, max(0.5, float(self.sensitivity)))
+            self.sensitivity = min(SENS_MAX, max(SENS_MIN, float(self.sensitivity)))
         except (TypeError, ValueError):
             self.sensitivity = 1.6
         try:
-            self.ring = min(3.0, max(0.5, float(self.ring)))
+            self.ring = min(RING_MAX, max(RING_MIN, float(self.ring)))
         except (TypeError, ValueError):
             self.ring = 1.6
+        try:
+            self.smooth = min(1.0, max(0.0, float(self.smooth)))
+        except (TypeError, ValueError):
+            self.smooth = 0.5
         self.normalise = bool(self.normalise)
         self.topmost = bool(self.topmost)
         self.controls = bool(self.controls)

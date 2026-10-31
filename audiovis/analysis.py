@@ -56,6 +56,7 @@ class Analyser:
         self.last_beat = -1e9
         self.normalise = True
         self.ring_sens = 1.0
+        self.wave = np.zeros(FFT_SIZE, dtype=np.float32)
         self.rate = 0
         self.lo = None
         self.hi = None
@@ -72,6 +73,7 @@ class Analyser:
     def update(self, samples, dt, now):
         dt = min(max(dt, 1e-3), 0.1)
         steps = dt * 60.0
+        self.wave = np.asarray(samples, dtype=np.float32)
         spectrum = np.abs(np.fft.rfft(samples * self.window))[: FFT_SIZE // 2] / FFT_SIZE
         k = SMOOTHING**steps
         self.smoothed = k * self.smoothed + (1.0 - k) * spectrum

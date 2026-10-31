@@ -1,6 +1,8 @@
 import math
 from collections import namedtuple
 
+import numpy as np
+
 from . import colors
 from .analysis import BANDS
 
@@ -19,8 +21,13 @@ def ring(cx, cy, radius, width, rgb, alpha):
     return Prim("ring", cx, cy, radius, 0.0, width, rgb, alpha)
 
 
+def height_gain(look):
+    return max(0.0, look.sensitivity) / 1.6
+
+
 class Look:
-    def __init__(self, mode, fixed, sensitivity, ring=1.0):
+    def __init__(self, mode, fixed, sensitivity, ring=1.0, smooth=0.5):
+        self.smooth = smooth
         self.mode = mode
         self.fixed = fixed
         self.sensitivity = sensitivity
@@ -43,14 +50,15 @@ class RadialVisual:
         max_len = m * 0.28
         if pixel:
             bar_w = max(1.0, float(round(m / 64.0)))
-            ring_w = max(1.0, float(round(look.ring)))
+            ring_w = max(1.0, float(round(min(look.ring, 3.0))))
         else:
             bar_w = max(1.0, m / 64.0)
-            ring_w = max(1.0, m / 128.0) * (0.6 + 0.4 * look.ring)
+            ring_w = max(1.0, m / 128.0) * (0.6 + 0.4 * min(look.ring, 3.0))
         min_len = bar_w
+        gain = height_gain(look)
         prims = []
         for i in range(BANDS):
-            length = an.vals[i] * max_len + min_len
+            length = min(1.0, an.vals[i] * gain) * max_len + min_len
             ang = (i + 0.5) / BANDS * math.pi - math.pi / 2.0
             cos_a = math.cos(ang)
             sin_a = math.sin(ang)
@@ -77,6 +85,7 @@ class BarsVisual:
         self.peaks = [0.0] * BANDS
 
     def frame(self, width, height, dt, an, look, pixel):
+        gain = height_gain(look)
         mid = height / 2.0
         bw = width / BANDS
         fall = height * 0.72 * dt
@@ -92,7 +101,7 @@ class BarsVisual:
         bottoms = []
         white = (255, 255, 255)
         for i in range(BANDS):
-            h = an.vals[i] * (mid - 1.0)
+            h = min(1.0, an.vals[i] * gain) * (mid - 1.0)
             peak = max(h, self.peaks[i] - fall)
             self.peaks[i] = peak
             x0 = i * bw + offset
@@ -104,4 +113,47 @@ class BarsVisual:
         return bars + tops + bottoms
 
 
-VISUALS = {"radial": RadialVisual, "bars": BarsVisual}
+class WaveRadialVisual(RadialVisual):
+    def __init__(self):
+        super().__init__()
+        self.line = None
+        self.peak = 0.02
+
+    def wave_prims(self, width, height, dt, an, look, pixel):
+        n = int(min(128, max(16, width // 4)))
+        samples = np.asarray(an.wave, dtype=np.float32)
+        edges = np.linspace(0, len(samples), n + 1).astype(int)
+        sums = np.add.reduceat(samples, edges[:-1])
+        pts = sums / np.maximum(np.diff(edges), 1)
+        smooth = min(1.0, max(0.0, look.smooth))
+        half = int(round(smooth * smooth * 12.0))
+        if half > 0:
+            padded = np.pad(pts, half, mode="edge")
+            pts = np.convolve(padded, np.ones(2 * half + 1) / (2 * half + 1), mode="valid")
+        if self.line is None or len(self.line) != n:
+            self.line = pts.copy()
+        keep = (smooth * 0.9) ** (min(max(dt, 1e-3), 0.1) * 60.0)
+        self.line = keep * self.line + (1.0 - keep) * pts
+        top = float(np.max(np.abs(self.line)))
+        self.peak = max(top, self.peak * 0.995 ** (min(max(dt, 1e-3), 0.1) * 60.0), 0.02)
+        scaled = self.line / self.peak
+        m = float(min(width, height))
+        amp = m * 0.16 * min(height_gain(look), 2.0)
+        cy = height / 2.0
+        stroke = 1.0 if pixel else max(1.5, m / 200.0)
+        prims = []
+        for i in range(n - 1):
+            x0 = i / (n - 1) * (width - 1)
+            x1 = (i + 1) / (n - 1) * (width - 1)
+            y0 = cy - float(scaled[i]) * amp
+            y1 = cy - float(scaled[i + 1]) * amp
+            rgb = colors.bar_rgb(look.mode, i, n - 1, abs(float(scaled[i])), look.sensitivity, look.fixed)
+            prims.append(line(x0, y0, x1, y1, stroke, rgb))
+        return prims
+
+    def frame(self, width, height, dt, an, look, pixel):
+        wave = self.wave_prims(width, height, dt, an, look, pixel)
+        return wave + super().frame(width, height, dt, an, look, pixel)
+
+
+VISUALS = {"radial_wave": WaveRadialVisual, "radial": RadialVisual, "bars": BarsVisual}

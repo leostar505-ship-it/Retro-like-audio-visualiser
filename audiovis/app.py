@@ -20,6 +20,7 @@ TEXT = "#e8e8f0"
 MUTED = "#99a0b0"
 
 VISUAL_LABELS = {
+    "radial_wave": "Radial spectrum + bass ring + waveform",
     "radial": "Radial spectrum + bass ring",
     "bars": "Mirrored peak-hold bars",
 }
@@ -58,7 +59,7 @@ class App:
         self.analyser.normalise = cfg.normalise
         self.analyser.ring_sens = cfg.ring
         fixed = colors.parse_hex(cfg.hex) or colors.parse_hex(settings_store.DEFAULT_HEX)
-        self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity, cfg.ring)
+        self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity, cfg.ring, cfg.smooth)
         self._build_ui()
         self._set_visual(cfg.visual)
         self._set_screen(cfg.screen)
@@ -107,7 +108,7 @@ class App:
         ttk.Label(row1, text="Visual").pack(side="left")
         self.visual_var = tk.StringVar(value=VISUAL_LABELS[cfg.visual])
         visual_box = ttk.Combobox(
-            row1, textvariable=self.visual_var, values=list(VISUAL_LABELS.values()), state="readonly", width=26
+            row1, textvariable=self.visual_var, values=list(VISUAL_LABELS.values()), state="readonly", width=36
         )
         visual_box.pack(side="left", padx=(6, 16))
         visual_box.bind("<<ComboboxSelected>>", self._on_visual)
@@ -130,12 +131,12 @@ class App:
         self.hex_var.trace_add("write", self._on_hex)
 
         ttk.Label(row2, text="Sensitivity").pack(side="left")
-        self.sens = ttk.Scale(row2, from_=0.5, to=3.0, orient="horizontal", length=150, command=self._on_sens)
+        self.sens = ttk.Scale(row2, from_=0.05, to=3.0, orient="horizontal", length=150, command=self._on_sens)
         self.sens.set(cfg.sensitivity)
         self.sens.pack(side="left", padx=(6, 16))
 
         ttk.Label(row2, text="Bass ring").pack(side="left")
-        self.ring_scale = ttk.Scale(row2, from_=0.5, to=3.0, orient="horizontal", length=150, command=self._on_ring)
+        self.ring_scale = ttk.Scale(row2, from_=0.5, to=8.0, orient="horizontal", length=150, command=self._on_ring)
         self.ring_scale.set(cfg.ring)
         self.ring_scale.pack(side="left", padx=(6, 16))
 
@@ -149,6 +150,10 @@ class App:
         ttk.Checkbutton(row2b, text="Always on top", variable=self.top_var, command=self._on_topmost).pack(
             side="left", padx=(0, 16)
         )
+        ttk.Label(row2b, text="Line smoothness").pack(side="left")
+        self.smooth_scale = ttk.Scale(row2b, from_=0.0, to=1.0, orient="horizontal", length=120, command=self._on_smooth)
+        self.smooth_scale.set(cfg.smooth)
+        self.smooth_scale.pack(side="left", padx=(6, 16))
         ttk.Label(row2b, text="Screen").pack(side="left")
         self.screen_var = tk.StringVar(value=screen_label(cfg.screen))
         screen_box = ttk.Combobox(
@@ -219,7 +224,7 @@ class App:
         self.visual_var.set(VISUAL_LABELS[name])
 
     def _on_visual(self, _event=None):
-        self._set_visual(reverse_lookup(VISUAL_LABELS, self.visual_var.get(), "radial"))
+        self._set_visual(reverse_lookup(VISUAL_LABELS, self.visual_var.get(), "radial_wave"))
 
     def _set_screen(self, key):
         if key not in SCREENS:
@@ -264,6 +269,10 @@ class App:
     def _on_sens(self, value):
         self.look.sensitivity = float(value)
         self.cfg.sensitivity = float(value)
+
+    def _on_smooth(self, value):
+        self.look.smooth = float(value)
+        self.cfg.smooth = float(value)
 
     def _on_ring(self, value):
         self.look.ring = float(value)

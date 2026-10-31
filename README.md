@@ -1,15 +1,16 @@
 # Audio Visualiser
 
-A Windows app that listens to everything your PC is playing (games, music, Discord, all of it) and draws it live as either:
+A Windows app that listens to everything your PC is playing (games, music, Discord, all of it) and draws it live as one of three visuals:
 
+- **Radial spectrum + bass ring + waveform** (default): the radial spectrum below with a waveform line through the middle that follows sustained low tones. The Line smoothness slider decides how much fine detail the line keeps.
 - **Radial spectrum + bass ring**: 32 frequency bars around a circle that pulses with the bass, with a ring that shoots out on each beat.
 - **Mirrored peak-hold bars**: bars grow from the centre line in both directions, with peak dots that fall slowly.
 
 It captures audio with WASAPI loopback, so nothing needs to be routed through a virtual cable and the visualiser ignores your volume knob.
 
-| Radial, loudness gradient | Radial, rainbow | Mirrored bars |
+| Radial + waveform (default) | Radial, loudness gradient | Mirrored bars |
 |---|---|---|
-| ![radial loudness](docs/radial-loudness.png) | ![radial rainbow](docs/radial-rainbow.png) | ![bars](docs/bars.png) |
+| ![radial wave](docs/radial-wave.png) | ![radial loudness](docs/radial-loudness.png) | ![bars](docs/bars.png) |
 
 Screenshots use the built-in synthetic demo audio.
 
@@ -38,8 +39,9 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose **More
 | Visual | Switch between the radial spectrum and the mirrored bars |
 | Colour | Loudness gradient (pink, purple, blue, green, yellow, red as it gets louder), a custom colour, or rainbow by frequency |
 | Swatch / hex box | Pick a colour or type a hex code such as `#00ffaa`. Setting one switches Colour to Custom. The box turns red if the code is invalid |
-| Sensitivity | How loud a band has to be to reach red in the loudness gradient |
-| Bass ring | How easily the bass ring fires and how thick and long-lasting it is. Raise it if the ring is too rare or too faint |
+| Sensitivity | Scales how tall the bars and waveform are (0.05 to 3, default 1.6) and how loud a band has to be to reach red in the loudness gradient |
+| Bass ring | How easily the bass ring fires and how thick and long-lasting it is (0.5 to 8). Raise it if the ring is too rare or too faint |
+| Line smoothness | Smooths the waveform line. Low shows fine detail, high shows only the slow, dominant tones |
 | Normalise | Subtracts each band's running average so constant noise stays quiet and sudden hits pop. Turn it off to see raw levels |
 | Always on top | Keeps the window above everything else |
 | Screen | Full window, or a pixelated preset that mimics a small display |
@@ -84,11 +86,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.2.1` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.3.0` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
 ## Tests
