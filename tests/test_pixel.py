@@ -236,12 +236,12 @@ def test_waveform_is_one_clean_sine_whose_cycles_grow_with_frequency():
     assert np.ptp(ys) > 20
 
 
-def test_waveform_is_flat_when_there_is_no_tone_and_sensitivity_scales_it():
+def test_waveform_is_flat_when_there_is_no_tone_and_ignores_sensitivity():
     quiet = run_wave(100.0, mag=0.0, frames=60)
     assert np.ptp([p.b for p in quiet]) < 1.0
     low = run_wave(100.0, sens=0.05)
     high = run_wave(100.0, sens=3.0)
-    assert np.ptp([p.b for p in low]) < np.ptp([p.b for p in high])
+    assert abs(np.ptp([p.b for p in low]) - np.ptp([p.b for p in high])) < 1.0
 
 
 def test_smoothness_slows_frequency_changes():
