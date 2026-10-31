@@ -126,3 +126,9 @@ def test_visual_cycle_and_controls_toggle():
     assert cfg.controls is True
     pump(root, 0.2)
     app.close()
+
+
+def test_frames_are_never_scheduled_back_to_back():
+    from audiovis import app
+
+    assert app.MIN_FRAME_GAP_MS >= 4

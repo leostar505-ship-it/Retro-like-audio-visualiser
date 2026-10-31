@@ -30,6 +30,7 @@ MODE_LABELS = {
     colors.MODE_RAINBOW: "Rainbow (red centre to pink)",
 }
 TRIGGER_LABELS = {"kick": "Kick", "bass": "Bass"}
+MIN_FRAME_GAP_MS = 8
 SELFTEST_FRAMES = 110
 
 
@@ -372,7 +373,7 @@ class App:
                 self.close()
                 return
         elapsed_ms = (time.perf_counter() - started) * 1000.0
-        self.after_id = self.root.after(max(1, int(16 - elapsed_ms)), self.tick)
+        self.after_id = self.root.after(max(MIN_FRAME_GAP_MS, int(16 - elapsed_ms)), self.tick)
 
     def close(self):
         if self.after_id is not None:

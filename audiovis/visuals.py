@@ -19,23 +19,8 @@ def ring(cx, cy, radius, width, rgb, alpha):
     return Prim("ring", cx, cy, radius, 0.0, width, rgb, alpha)
 
 
-def segmented(x0, y0, x1, y1, d0, d1, segments, width, colour_at):
-    prims = []
-    for j in range(segments):
-        t0 = j / segments
-        t1 = (j + 1) / segments
-        rgb = colour_at(d0 + (d1 - d0) * (t0 + t1) / 2.0)
-        prims.append(
-            line(
-                x0 + (x1 - x0) * t0,
-                y0 + (y1 - y0) * t0,
-                x0 + (x1 - x0) * t1,
-                y0 + (y1 - y0) * t1,
-                width,
-                rgb,
-            )
-        )
-    return prims
+SHELLS = 6
+BAR_SHELLS = 8
 
 
 def height_gain(look):
@@ -77,22 +62,25 @@ class RadialVisual:
         rainbow = look.mode == colors.MODE_RAINBOW
         cross = m * 0.24
         far = m * 0.56
-
-        def radial_colour(d):
-            return colors.wave_rgb(d, cross, far)
-
+        shell = max_len / SHELLS
+        shell_rgb = [colors.wave_rgb(m * 0.2 + (k + 0.5) * shell, cross, far) for k in range(SHELLS + 1)]
         for i in range(BANDS):
             length = min(1.0, an.vals[i] * gain) * max_len + min_len
             ang = (i + 0.5) / BANDS * math.pi - math.pi / 2.0
             cos_a = math.cos(ang)
             sin_a = math.sin(ang)
-            y0 = cy + sin_a * r0
-            y1 = cy + sin_a * (r0 + length)
             if rainbow:
-                segs = max(1, min(6, int(length / 2.0))) if pixel else 6
-                prims.extend(segmented(cx - cos_a * r0, y0, cx - cos_a * (r0 + length), y1, r0, r0 + length, segs, bar_w, radial_colour))
-                prims.extend(segmented(cx + cos_a * r0, y0, cx + cos_a * (r0 + length), y1, r0, r0 + length, segs, bar_w, radial_colour))
+                count = min(SHELLS + 1, max(1, int(math.ceil(length / shell))))
+                for k in range(count):
+                    s0 = k * shell
+                    s1 = min((k + 1) * shell, length)
+                    ya = cy + sin_a * (r0 + s0)
+                    yb = cy + sin_a * (r0 + s1)
+                    prims.append(line(cx - cos_a * (r0 + s0), ya, cx - cos_a * (r0 + s1), yb, bar_w, shell_rgb[k]))
+                    prims.append(line(cx + cos_a * (r0 + s0), ya, cx + cos_a * (r0 + s1), yb, bar_w, shell_rgb[k]))
             else:
+                y0 = cy + sin_a * r0
+                y1 = cy + sin_a * (r0 + length)
                 rgb = colors.bar_rgb(look.mode, i, BANDS, an.vals[i], look.sensitivity, look.fixed)
                 prims.append(line(cx - cos_a * r0, y0, cx - cos_a * (r0 + length), y1, bar_w, rgb))
                 prims.append(line(cx + cos_a * r0, y0, cx + cos_a * (r0 + length), y1, bar_w, rgb))
@@ -119,6 +107,8 @@ class BarsVisual:
     def frame(self, width, height, dt, an, look, pixel):
         gain = height_gain(look)
         mid = height / 2.0
+        shell = max(1.0, (mid - 1.0) / BAR_SHELLS)
+        shell_rgb = [colors.wave_rgb((k + 0.5) * shell, mid * 0.5, mid) for k in range(BAR_SHELLS)]
         bw = width / BANDS
         fall = height * 0.72 * dt
         if pixel:
@@ -139,11 +129,11 @@ class BarsVisual:
             x0 = i * bw + offset
             x1 = x0 + bar_w
             if look.mode == colors.MODE_RAINBOW:
-                segs = max(1, min(8, int(h / 3.0))) if pixel else 8
-                for j in range(segs):
-                    d0 = h * j / segs
-                    d1 = h * (j + 1) / segs
-                    rgb = colors.wave_rgb((d0 + d1) / 2.0, mid * 0.5, mid)
+                count = max(1, int(math.ceil(h / shell))) if h > 0 else 1
+                for k in range(min(count, BAR_SHELLS)):
+                    d0 = k * shell
+                    d1 = min((k + 1) * shell, h)
+                    rgb = shell_rgb[k]
                     bars.append(rect(x0, mid - d1, x1, mid - d0, rgb))
                     bars.append(rect(x0, mid + d0 + 1.0, x1, mid + d1 + 1.0, rgb))
             else:
