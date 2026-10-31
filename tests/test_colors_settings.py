@@ -80,3 +80,12 @@ def test_settings_missing_or_corrupt_file(tmp_path):
     bad = tmp_path / "bad.json"
     bad.write_text("not json")
     assert store.load(bad).visual == "radial"
+
+
+def test_ring_setting_is_clamped_and_defaults():
+    s = store.Settings(ring=99).sanitise()
+    assert s.ring == 3.0
+    s = store.Settings(ring=0).sanitise()
+    assert s.ring == 0.5
+    s = store.Settings(ring="bad").sanitise()
+    assert s.ring == 1.6

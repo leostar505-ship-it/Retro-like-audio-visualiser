@@ -56,8 +56,9 @@ class App:
         self.device_values = []
         self.analyser = Analyser(source.rate)
         self.analyser.normalise = cfg.normalise
+        self.analyser.ring_sens = cfg.ring
         fixed = colors.parse_hex(cfg.hex) or colors.parse_hex(settings_store.DEFAULT_HEX)
-        self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity)
+        self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity, cfg.ring)
         self._build_ui()
         self._set_visual(cfg.visual)
         self._set_screen(cfg.screen)
@@ -133,18 +134,25 @@ class App:
         self.sens.set(cfg.sensitivity)
         self.sens.pack(side="left", padx=(6, 16))
 
+        ttk.Label(row2, text="Bass ring").pack(side="left")
+        self.ring_scale = ttk.Scale(row2, from_=0.5, to=3.0, orient="horizontal", length=150, command=self._on_ring)
+        self.ring_scale.set(cfg.ring)
+        self.ring_scale.pack(side="left", padx=(6, 16))
+
         self.norm_var = tk.BooleanVar(value=cfg.normalise)
         ttk.Checkbutton(row2, text="Normalise (react to changes)", variable=self.norm_var, command=self._on_norm).pack(
             side="left"
         )
+        row2b = ttk.Frame(self.controls)
+        row2b.pack(fill="x", pady=(8, 0))
         self.top_var = tk.BooleanVar(value=cfg.topmost)
-        ttk.Checkbutton(row2, text="Always on top", variable=self.top_var, command=self._on_topmost).pack(
-            side="left", padx=(14, 16)
+        ttk.Checkbutton(row2b, text="Always on top", variable=self.top_var, command=self._on_topmost).pack(
+            side="left", padx=(0, 16)
         )
-        ttk.Label(row2, text="Screen").pack(side="left")
+        ttk.Label(row2b, text="Screen").pack(side="left")
         self.screen_var = tk.StringVar(value=screen_label(cfg.screen))
         screen_box = ttk.Combobox(
-            row2,
+            row2b,
             textvariable=self.screen_var,
             values=[screen_label(key) for key in SCREEN_ORDER],
             state="readonly",
@@ -256,6 +264,11 @@ class App:
     def _on_sens(self, value):
         self.look.sensitivity = float(value)
         self.cfg.sensitivity = float(value)
+
+    def _on_ring(self, value):
+        self.look.ring = float(value)
+        self.cfg.ring = float(value)
+        self.analyser.ring_sens = float(value)
 
     def _on_norm(self):
         self.analyser.normalise = bool(self.norm_var.get())

@@ -52,12 +52,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: echo "tag=v$(sed -n 's/^__version__ = \"\(.*\)\"/\1/p' audiovis/__init__.py)" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           name: AudioVisualiser-windows
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.2.0' }}
+          tag_name: ${{ steps.ver.outputs.tag }}
           target_commitish: ${{ github.sha }}
           files: AudioVisualiser.exe
           generate_release_notes: true

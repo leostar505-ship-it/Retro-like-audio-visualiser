@@ -184,3 +184,16 @@ def test_peak_dots_fall_over_time():
     for _ in range(10):
         visual.frame(128, 64, 1 / 60, an, look, True)
     assert 0 < visual.peaks[0] < start
+
+
+def test_ring_slider_makes_ring_thicker_in_pixel_mode():
+    from audiovis.visuals import Look, RadialVisual
+
+    def ring_width(ring):
+        an = active_analyser()
+        an.beat = True
+        look = Look("loudness", (255, 45, 149), 1.6, ring)
+        prims = RadialVisual().frame(240, 240, 1 / 60, an, look, True)
+        return [p.w for p in prims if p.kind == "ring"][0]
+
+    assert ring_width(3.0) > ring_width(0.5)

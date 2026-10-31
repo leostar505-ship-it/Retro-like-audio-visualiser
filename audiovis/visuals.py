@@ -20,10 +20,11 @@ def ring(cx, cy, radius, width, rgb, alpha):
 
 
 class Look:
-    def __init__(self, mode, fixed, sensitivity):
+    def __init__(self, mode, fixed, sensitivity, ring=1.0):
         self.mode = mode
         self.fixed = fixed
         self.sensitivity = sensitivity
+        self.ring = ring
 
 
 class RadialVisual:
@@ -42,10 +43,10 @@ class RadialVisual:
         max_len = m * 0.28
         if pixel:
             bar_w = max(1.0, float(round(m / 64.0)))
-            ring_w = 1.0
+            ring_w = max(1.0, float(round(look.ring)))
         else:
             bar_w = max(1.0, m / 64.0)
-            ring_w = max(1.0, m / 128.0)
+            ring_w = max(1.0, m / 128.0) * (0.6 + 0.4 * look.ring)
         min_len = bar_w
         prims = []
         for i in range(BANDS):
@@ -64,7 +65,7 @@ class RadialVisual:
             self.ring_v = 0.5 + an.bass_now * look.sensitivity
         elif self.ring_a > 0.0:
             self.ring_r += m * 1.8 * dt
-            self.ring_a -= 3.0 * dt
+            self.ring_a -= 3.0 * dt / math.sqrt(max(0.25, look.ring))
         if self.ring_a > 0.0:
             base = colors.ring_rgb(look.mode, self.ring_v, look.fixed)
             prims.append(ring(cx, cy, self.ring_r, ring_w, base, self.ring_a))

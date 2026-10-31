@@ -94,3 +94,27 @@ def test_rate_change_rebuilds_edges():
     assert an.rate == 44100
     assert np.array_equal(an.hi, band_edges(44100)[1])
     assert np.array_equal(an.lo, band_edges(44100)[0])
+
+
+def bass_mix(amp):
+    return sum(sine(f, amp=amp) for f in (45, 60, 80, 100, 130))
+
+
+def count_beats(ring_sens):
+    an = Analyser(TARGET_RATE)
+    an.ring_sens = ring_sens
+    now = settle(an, bass_mix(0.0005), frames=150)
+    beats = 0
+    for _ in range(60):
+        now += 1 / 60
+        an.update(bass_mix(0.002), 1 / 60, now)
+        beats += int(an.beat)
+    return beats
+
+
+def test_higher_ring_sensitivity_fires_on_smaller_bass_jumps():
+    low = count_beats(0.5)
+    mid = count_beats(1.0)
+    high = count_beats(3.0)
+    assert low == 0
+    assert high > mid >= low

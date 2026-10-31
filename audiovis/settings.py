@@ -17,6 +17,7 @@ class Settings:
     colour_mode: str = MODE_LOUDNESS
     hex: str = DEFAULT_HEX
     sensitivity: float = 1.6
+    ring: float = 1.6
     normalise: bool = True
     topmost: bool = False
     controls: bool = True
@@ -37,6 +38,10 @@ class Settings:
             self.sensitivity = min(3.0, max(0.5, float(self.sensitivity)))
         except (TypeError, ValueError):
             self.sensitivity = 1.6
+        try:
+            self.ring = min(3.0, max(0.5, float(self.ring)))
+        except (TypeError, ValueError):
+            self.ring = 1.6
         self.normalise = bool(self.normalise)
         self.topmost = bool(self.topmost)
         self.controls = bool(self.controls)

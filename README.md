@@ -39,6 +39,7 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose **More
 | Colour | Loudness gradient (pink, purple, blue, green, yellow, red as it gets louder), a custom colour, or rainbow by frequency |
 | Swatch / hex box | Pick a colour or type a hex code such as `#00ffaa`. Setting one switches Colour to Custom. The box turns red if the code is invalid |
 | Sensitivity | How loud a band has to be to reach red in the loudness gradient |
+| Bass ring | How easily the bass ring fires and how thick and long-lasting it is. Raise it if the ring is too rare or too faint |
 | Normalise | Subtracts each band's running average so constant noise stays quiet and sudden hits pop. Turn it off to see raw levels |
 | Always on top | Keeps the window above everything else |
 | Screen | Full window, or a pixelated preset that mimics a small display |
@@ -83,11 +84,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.2.0` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.2.1` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 ## Tests

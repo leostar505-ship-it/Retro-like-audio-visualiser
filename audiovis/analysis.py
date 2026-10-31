@@ -55,6 +55,7 @@ class Analyser:
         self.beat = False
         self.last_beat = -1e9
         self.normalise = True
+        self.ring_sens = 1.0
         self.rate = 0
         self.lo = None
         self.hi = None
@@ -87,7 +88,8 @@ class Analyser:
         bass = float(self.bands[:BASS_BANDS].mean())
         self.bass_now = float(self.vals[:BASS_BANDS].mean())
         self.beat = False
-        if bass > self.bass_avg * 1.35 + 0.04 and now - self.last_beat > 0.13:
+        gain = max(0.25, float(self.ring_sens))
+        if bass > self.bass_avg * (1.0 + 0.35 / gain) + 0.04 / gain and now - self.last_beat > 0.13:
             self.beat = True
             self.last_beat = now
         keep = 0.95**steps
