@@ -1,0 +1,2 @@
+numpy>=1.26
+PyAudioWPatch; sys_platform == "win32"
