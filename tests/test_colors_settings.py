@@ -101,3 +101,14 @@ def test_new_defaults_and_ranges():
     assert store.Settings(smooth=5).sanitise().smooth == 1.0
     assert store.Settings(smooth=-1).sanitise().smooth == 0.0
     assert store.Settings(smooth="x").sanitise().smooth == 0.5
+
+
+def test_trigger_and_detect_settings():
+    s = store.Settings().sanitise()
+    assert s.trigger == "kick"
+    assert s.detect == 1.6
+    assert store.Settings(trigger="bass").sanitise().trigger == "bass"
+    assert store.Settings(trigger="x").sanitise().trigger == "kick"
+    assert store.Settings(detect=99).sanitise().detect == 8.0
+    assert store.Settings(detect=0).sanitise().detect == 0.25
+    assert store.Settings(detect="bad").sanitise().detect == 1.6

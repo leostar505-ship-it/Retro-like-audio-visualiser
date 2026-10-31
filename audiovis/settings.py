@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from .colors import MODE_RAINBOW, MODES, parse_hex
+from .analysis import DEFAULT_TRIGGER, TRIGGERS
 from .screens import DEFAULT_SCREEN, SCREENS
 
 VISUALS = ("radial_wave", "radial", "bars")
@@ -13,6 +14,8 @@ SENS_MIN = 0.05
 SENS_MAX = 3.0
 RING_MIN = 0.5
 RING_MAX = 8.0
+DETECT_MIN = 0.25
+DETECT_MAX = 8.0
 
 
 @dataclass
@@ -24,6 +27,8 @@ class Settings:
     sensitivity: float = 1.6
     ring: float = 1.6
     smooth: float = 0.5
+    detect: float = 1.6
+    trigger: str = DEFAULT_TRIGGER
     normalise: bool = True
     topmost: bool = False
     controls: bool = True
@@ -52,6 +57,12 @@ class Settings:
             self.smooth = min(1.0, max(0.0, float(self.smooth)))
         except (TypeError, ValueError):
             self.smooth = 0.5
+        try:
+            self.detect = min(DETECT_MAX, max(DETECT_MIN, float(self.detect)))
+        except (TypeError, ValueError):
+            self.detect = 1.6
+        if self.trigger not in TRIGGERS:
+            self.trigger = DEFAULT_TRIGGER
         self.normalise = bool(self.normalise)
         self.topmost = bool(self.topmost)
         self.controls = bool(self.controls)

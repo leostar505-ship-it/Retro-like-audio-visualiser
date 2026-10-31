@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pytest
 
@@ -199,53 +201,62 @@ def test_ring_slider_makes_ring_thicker_in_pixel_mode():
     assert ring_width(3.0) > ring_width(0.5)
 
 
-def wave_an(freq, amp=0.6, n=2048):
-    from audiovis.analysis import TARGET_RATE
-
+def drone_an(hz, mag=0.1):
     an = Analyser()
-    t = np.arange(n) / TARGET_RATE
-    an.wave = (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+    an.drone_hz = hz
+    an.drone_mag = mag
     an.vals = np.zeros(BANDS)
     return an
 
 
-def wave_ys(smooth, sens=1.6, samples=None):
+def run_wave(hz, smooth=0.5, sens=1.6, mag=0.1, mode=colors.MODE_FIXED, frames=40, width=600, height=400):
     from audiovis.visuals import WaveRadialVisual
 
     vis = WaveRadialVisual()
-    an = wave_an(80)
-    if samples is not None:
-        an.wave = samples
-    look = Look(colors.MODE_FIXED, (255, 0, 0), sens, 1.6, smooth)
+    an = drone_an(hz, mag)
+    look = Look(mode, (255, 0, 0), sens, 1.6, smooth)
     prims = []
-    for _ in range(30):
-        prims = vis.wave_prims(400, 300, 1 / 60, an, look, False)
-    return np.array([p.b for p in prims]), prims
+    for _ in range(frames):
+        prims = vis.wave_prims(width, height, 1 / 60, an, look, False)
+    return prims
 
 
-def test_waveform_follows_a_low_drone_and_is_centred():
-    ys, prims = wave_ys(0.5)
-    assert ys.max() - ys.min() > 20
-    assert abs(ys.mean() - 150) < 15
-    assert len(prims) > 10
+def count_crossings(prims, cy):
+    ys = np.array([p.b for p in prims] + [prims[-1].d]) - cy
+    return int(np.sum(np.signbit(ys[1:]) != np.signbit(ys[:-1])))
 
 
-def test_waveform_smoothness_removes_high_frequency_detail():
-    from audiovis.analysis import TARGET_RATE
+def test_waveform_is_one_clean_sine_whose_cycles_grow_with_frequency():
+    low = run_wave(82.0)
+    high = run_wave(1200.0)
+    assert count_crossings(high, 200) > count_crossings(low, 200)
+    assert count_crossings(low, 200) >= 2
+    ys = np.array([p.b for p in low])
+    assert abs(ys.mean() - 200) < 15
+    assert np.ptp(ys) > 20
 
-    t = np.arange(2048) / TARGET_RATE
-    mix = (0.5 * np.sin(2 * np.pi * 70 * t) + 0.3 * np.sin(2 * np.pi * 2600 * t)).astype(np.float32)
-    rough, _ = wave_ys(0.0, samples=mix)
-    smooth, _ = wave_ys(1.0, samples=mix)
-    assert np.abs(np.diff(smooth)).sum() < np.abs(np.diff(rough)).sum()
+
+def test_waveform_is_flat_when_there_is_no_tone_and_sensitivity_scales_it():
+    quiet = run_wave(100.0, mag=0.0, frames=60)
+    assert np.ptp([p.b for p in quiet]) < 1.0
+    low = run_wave(100.0, sens=0.05)
+    high = run_wave(100.0, sens=3.0)
+    assert np.ptp([p.b for p in low]) < np.ptp([p.b for p in high])
 
 
-def test_waveform_is_flat_in_silence_and_sensitivity_scales_it():
-    quiet, _ = wave_ys(0.5, samples=np.zeros(2048, dtype=np.float32))
-    assert np.ptp(quiet) < 1.0
-    low, _ = wave_ys(0.5, sens=0.05)
-    high, _ = wave_ys(0.5, sens=3.0)
-    assert np.ptp(low) < np.ptp(high)
+def test_smoothness_slows_frequency_changes():
+    from audiovis.visuals import WaveRadialVisual
+
+    def settle(smooth):
+        vis = WaveRadialVisual()
+        look = Look(colors.MODE_FIXED, (255, 0, 0), 1.6, 1.6, smooth)
+        for _ in range(30):
+            vis.wave_prims(600, 400, 1 / 60, drone_an(100.0), look, False)
+        for _ in range(5):
+            vis.wave_prims(600, 400, 1 / 60, drone_an(1600.0), look, False)
+        return vis.log_f
+
+    assert settle(0.0) > settle(1.0)
 
 
 def test_sensitivity_floor_shrinks_bars():
@@ -259,17 +270,30 @@ def test_sensitivity_floor_shrinks_bars():
     assert bar_extent(0.05) < bar_extent(1.6)
 
 
-def test_rainbow_waveform_is_red_in_middle_cyan_at_circle_and_pink_at_ends():
-    from audiovis.visuals import WaveRadialVisual
-
-    vis = WaveRadialVisual()
-    an = wave_an(80)
-    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6, 1.6, 0.5)
-    prims = vis.wave_prims(600, 400, 1 / 60, an, look, False)
-    cross = 400 * 0.2
+def test_rainbow_waveform_is_red_in_middle_cyan_near_circle_and_pink_at_ends():
+    prims = run_wave(100.0, mode=colors.MODE_RAINBOW, width=600, height=400)
+    cross = 400 * 0.24
     mid = min(prims, key=lambda p: abs((p.a + p.c) / 2 - 300))
     at_circle = min(prims, key=lambda p: abs(abs((p.a + p.c) / 2 - 300) - cross))
     end = min(prims, key=lambda p: (p.a + p.c) / 2)
     assert mid.rgb[0] > 200 and mid.rgb[1] < 90 and mid.rgb[2] < 90
     assert at_circle.rgb[1] > 200 and at_circle.rgb[2] > 120 and at_circle.rgb[0] < 120
     assert end.rgb[0] > 200 and end.rgb[2] > 100 and end.rgb[1] < 110
+
+
+def test_rainbow_radial_bars_shift_from_red_near_centre_toward_pink_further_out():
+    an = active_analyser()
+    an.vals = np.ones(BANDS)
+    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6)
+    prims = RadialVisual().frame(600, 600, 1 / 60, an, look, False)
+    segs = [p for p in prims if p.kind == "line"]
+    assert len(segs) > 64 * 2
+    cx = cy = 300.0
+
+    def dist(p):
+        return math.hypot((p.a + p.c) / 2 - cx, (p.b + p.d) / 2 - cy)
+
+    near = min(segs, key=dist)
+    far = max(segs, key=dist)
+    assert near.rgb != far.rgb
+    assert far.rgb[0] > far.rgb[1] and far.rgb[2] > far.rgb[1]

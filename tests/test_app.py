@@ -88,6 +88,25 @@ def test_hex_entry_switches_to_custom_colour():
     app.close()
 
 
+def test_trigger_toggle_updates_analyser_and_settings():
+    from audiovis.app import App
+
+    root = make_root()
+    cfg = Settings().sanitise()
+    app = App(root, DemoSource(), cfg, persist=False)
+    pump(root, 0.2)
+    assert app.analyser.trigger == "kick"
+    app.cycle_trigger()
+    assert cfg.trigger == "bass"
+    assert app.analyser.trigger == "bass"
+    app._on_detect(5.0)
+    assert app.analyser.ring_sens == 5.0
+    assert cfg.detect == 5.0
+    app.cycle_trigger()
+    assert cfg.trigger == "kick"
+    app.close()
+
+
 def test_visual_cycle_and_controls_toggle():
     from audiovis.app import App
 

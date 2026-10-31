@@ -27,8 +27,9 @@ VISUAL_LABELS = {
 MODE_LABELS = {
     colors.MODE_LOUDNESS: "Loudness gradient: pink to red",
     colors.MODE_FIXED: "Custom colour",
-    colors.MODE_RAINBOW: "Rainbow by frequency",
+    colors.MODE_RAINBOW: "Rainbow (red centre to pink)",
 }
+TRIGGER_LABELS = {"kick": "Kick", "bass": "Bass"}
 SELFTEST_FRAMES = 110
 
 
@@ -57,7 +58,8 @@ class App:
         self.device_values = []
         self.analyser = Analyser(source.rate)
         self.analyser.normalise = cfg.normalise
-        self.analyser.ring_sens = cfg.ring
+        self.analyser.ring_sens = cfg.detect
+        self.analyser.set_trigger(cfg.trigger)
         fixed = colors.parse_hex(cfg.hex) or colors.parse_hex(settings_store.DEFAULT_HEX)
         self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity, cfg.ring, cfg.smooth)
         self._build_ui()
@@ -108,7 +110,7 @@ class App:
         ttk.Label(row1, text="Visual").pack(side="left")
         self.visual_var = tk.StringVar(value=VISUAL_LABELS[cfg.visual])
         visual_box = ttk.Combobox(
-            row1, textvariable=self.visual_var, values=list(VISUAL_LABELS.values()), state="readonly", width=36
+            row1, textvariable=self.visual_var, values=list(VISUAL_LABELS.values()), state="readonly", width=33
         )
         visual_box.pack(side="left", padx=(6, 16))
         visual_box.bind("<<ComboboxSelected>>", self._on_visual)
@@ -135,15 +137,28 @@ class App:
         self.sens.set(cfg.sensitivity)
         self.sens.pack(side="left", padx=(6, 16))
 
-        ttk.Label(row2, text="Bass ring").pack(side="left")
-        self.ring_scale = ttk.Scale(row2, from_=0.5, to=8.0, orient="horizontal", length=150, command=self._on_ring)
-        self.ring_scale.set(cfg.ring)
-        self.ring_scale.pack(side="left", padx=(6, 16))
-
         self.norm_var = tk.BooleanVar(value=cfg.normalise)
         ttk.Checkbutton(row2, text="Normalise (react to changes)", variable=self.norm_var, command=self._on_norm).pack(
             side="left"
         )
+        row_ring = ttk.Frame(self.controls)
+        row_ring.pack(fill="x", pady=(8, 0))
+        ttk.Label(row_ring, text="Bass ring reacts to").pack(side="left")
+        self.trigger_var = tk.StringVar(value=TRIGGER_LABELS[cfg.trigger])
+        trigger_box = ttk.Combobox(
+            row_ring, textvariable=self.trigger_var, values=list(TRIGGER_LABELS.values()), state="readonly", width=8
+        )
+        trigger_box.pack(side="left", padx=(6, 16))
+        trigger_box.bind("<<ComboboxSelected>>", self._on_trigger)
+        ttk.Label(row_ring, text="Detection").pack(side="left")
+        self.detect_scale = ttk.Scale(row_ring, from_=0.25, to=8.0, orient="horizontal", length=150, command=self._on_detect)
+        self.detect_scale.set(cfg.detect)
+        self.detect_scale.pack(side="left", padx=(6, 16))
+        ttk.Label(row_ring, text="Ring size").pack(side="left")
+        self.ring_scale = ttk.Scale(row_ring, from_=0.5, to=8.0, orient="horizontal", length=120, command=self._on_ring)
+        self.ring_scale.set(cfg.ring)
+        self.ring_scale.pack(side="left", padx=(6, 0))
+
         row2b = ttk.Frame(self.controls)
         row2b.pack(fill="x", pady=(8, 0))
         self.top_var = tk.BooleanVar(value=cfg.topmost)
@@ -183,6 +198,7 @@ class App:
     def _bind_keys(self):
         self.root.bind_all("<Key-h>", lambda e: self._shortcut(self.toggle_controls))
         self.root.bind_all("<Key-v>", lambda e: self._shortcut(self.cycle_visual))
+        self.root.bind_all("<Key-k>", lambda e: self._shortcut(self.cycle_trigger))
         self.root.bind_all("<Key-p>", lambda e: self._shortcut(self.cycle_screen))
         self.root.bind_all("<Key-r>", lambda e: self._shortcut(self._restart_capture))
         self.root.bind_all("<F11>", lambda e: self.toggle_fullscreen())
@@ -277,7 +293,22 @@ class App:
     def _on_ring(self, value):
         self.look.ring = float(value)
         self.cfg.ring = float(value)
+
+    def _on_detect(self, value):
+        self.cfg.detect = float(value)
         self.analyser.ring_sens = float(value)
+
+    def _on_trigger(self, _event=None):
+        self._set_trigger(reverse_lookup(TRIGGER_LABELS, self.trigger_var.get(), "kick"))
+
+    def _set_trigger(self, name):
+        self.cfg.trigger = name
+        self.analyser.set_trigger(name)
+        self.trigger_var.set(TRIGGER_LABELS[name])
+
+    def cycle_trigger(self):
+        names = list(TRIGGER_LABELS)
+        self._set_trigger(names[(names.index(self.cfg.trigger) + 1) % len(names)])
 
     def _on_norm(self):
         self.analyser.normalise = bool(self.norm_var.get())

@@ -96,25 +96,93 @@ def test_rate_change_rebuilds_edges():
     assert np.array_equal(an.lo, band_edges(44100)[0])
 
 
-def bass_mix(amp):
-    return sum(sine(f, amp=amp) for f in (45, 60, 80, 100, 130))
+def kick_track(seconds=8.0, period=0.4, rate=TARGET_RATE):
+    n = int(seconds * rate)
+    t = np.arange(n) / rate
+    x = 0.12 * np.sin(2 * np.pi * 55 * t) + 0.08 * np.sin(2 * np.pi * 220 * t) + 0.05 * np.sin(2 * np.pi * 880 * t)
+    kicks = []
+    k = 0.5
+    while k < seconds - 0.3:
+        kicks.append(k)
+        s = int(k * rate)
+        m = int(0.18 * rate)
+        tt = np.arange(m) / rate
+        freq = 55 + 90 * np.exp(-tt * 40)
+        x[s : s + m] += 0.5 * np.sin(2 * np.pi * np.cumsum(freq) / rate) * np.exp(-tt * 14)
+        x[s : s + 240] += 0.3 * np.random.default_rng(1).standard_normal(240) * np.exp(-np.arange(240) / 60.0)
+        k += period
+    return x.astype(np.float32), kicks
 
 
-def count_beats(ring_sens):
+def beats_for(x, ring_sens=1.6):
     an = Analyser(TARGET_RATE)
     an.ring_sens = ring_sens
-    now = settle(an, bass_mix(0.0005), frames=150)
-    beats = 0
-    for _ in range(60):
-        now += 1 / 60
-        an.update(bass_mix(0.002), 1 / 60, now)
-        beats += int(an.beat)
-    return beats
+    out = []
+    hop = TARGET_RATE // 60
+    for pos in range(FFT_SIZE, len(x), hop):
+        an.update(x[pos - FFT_SIZE : pos], 1 / 60, pos / TARGET_RATE)
+        if an.beat:
+            out.append(pos / TARGET_RATE)
+    return np.array(out)
 
 
-def test_higher_ring_sensitivity_fires_on_smaller_bass_jumps():
-    low = count_beats(0.5)
-    mid = count_beats(1.0)
-    high = count_beats(3.0)
-    assert low == 0
-    assert high > mid >= low
+def test_kicks_over_a_loud_sustained_mix_register():
+    x, kicks = kick_track()
+    beats = beats_for(x)
+    hit = sum(1 for k in kicks if len(beats) and np.min(np.abs(beats - k - 0.02)) < 0.09)
+    assert hit >= 0.75 * len(kicks)
+    assert len(beats) <= 1.7 * len(kicks)
+
+
+def test_higher_ring_sensitivity_fires_more_often():
+    x, _ = kick_track()
+    assert len(beats_for(x, 8.0)) >= len(beats_for(x, 1.6)) >= len(beats_for(x, 0.5))
+
+
+def test_no_beats_in_silence_or_a_pure_steady_tone():
+    assert len(beats_for(np.zeros(TARGET_RATE * 3, dtype=np.float32))) == 0
+    t = np.arange(TARGET_RATE * 4) / TARGET_RATE
+    assert len(beats_for((0.4 * np.sin(2 * np.pi * 80 * t)).astype(np.float32))) <= 1
+
+
+def test_drone_tracks_the_strongest_tone_and_resists_flicker():
+    an = Analyser(TARGET_RATE)
+    strong = sine(220, amp=0.5) + sine(660, amp=0.2)
+    now = settle(an, strong, frames=40)
+    assert abs(an.drone_hz - 220) < 6
+    near_tie = sine(220, amp=0.5) + sine(660, amp=0.55)
+    settle(an, near_tie, frames=30, start=now)
+    assert abs(an.drone_hz - 220) < 6
+    dominant = sine(660, amp=0.6) + sine(220, amp=0.1)
+    settle(an, dominant, frames=40, start=now + 1.0)
+    assert abs(an.drone_hz - 660) < 10
+
+
+def test_bass_mode_reacts_far_less_to_a_mid_frequency_click_than_kick_mode():
+    n = TARGET_RATE * 4
+    t = np.arange(n) / TARGET_RATE
+    x = (0.1 * np.sin(2 * np.pi * 55 * t)).astype(np.float32)
+    burst_t = np.arange(2400) / TARGET_RATE
+    burst = (0.6 * np.sin(2 * np.pi * 500 * burst_t) * np.exp(-burst_t * 60.0)).astype(np.float32)
+    for k in (1.0, 1.6, 2.2, 2.8, 3.4):
+        s = int(k * TARGET_RATE)
+        x[s : s + len(burst)] += burst
+
+    def peak_flux(trigger):
+        an = Analyser(TARGET_RATE)
+        an.set_trigger(trigger)
+        peak = 0.0
+        for pos in range(FFT_SIZE, len(x), TARGET_RATE // 60):
+            an.update(x[pos - FFT_SIZE : pos], 1 / 60, pos / TARGET_RATE)
+            peak = max(peak, an.flux)
+        return peak
+
+    assert peak_flux("kick") > 3.0 * peak_flux("bass")
+
+
+def test_set_trigger_ignores_unknown_names():
+    an = Analyser(TARGET_RATE)
+    an.set_trigger("nope")
+    assert an.trigger == "kick"
+    an.set_trigger("bass")
+    assert an.trigger == "bass"

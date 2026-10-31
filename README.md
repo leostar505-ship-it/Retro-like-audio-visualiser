@@ -2,7 +2,7 @@
 
 A Windows app that listens to everything your PC is playing (games, music, Discord, all of it) and draws it live as one of three visuals:
 
-- **Radial spectrum + bass ring + waveform** (default): the radial spectrum below with a waveform line through the middle that follows sustained low tones. The Line smoothness slider decides how much fine detail the line keeps.
+- **Radial spectrum + bass ring + waveform** (default): the radial spectrum below with a clean sine wave through the middle that follows the single strongest tone in the audio. The Line smoothness slider decides how quickly it follows changes.
 - **Radial spectrum + bass ring**: 32 frequency bars around a circle that pulses with the bass, with a ring that shoots out on each beat.
 - **Mirrored peak-hold bars**: bars grow from the centre line in both directions, with peak dots that fall slowly.
 
@@ -37,18 +37,20 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose **More
 | Control | What it does |
 |---|---|
 | Visual | Switch between the radial spectrum and the mirrored bars |
-| Colour | Loudness gradient (pink, purple, blue, green, yellow, red as it gets louder), a custom colour, or rainbow by frequency |
+| Colour | Rainbow (red in the centre, through green and blue to pink the further out you go), loudness gradient (pink, purple, blue, green, yellow, red as it gets louder), or a custom colour |
 | Swatch / hex box | Pick a colour or type a hex code such as `#00ffaa`. Setting one switches Colour to Custom. The box turns red if the code is invalid |
 | Sensitivity | Scales how tall the bars and waveform are (0.05 to 3, default 1.6) and how loud a band has to be to reach red in the loudness gradient |
-| Bass ring | How easily the bass ring fires and how thick and long-lasting it is (0.5 to 8). Raise it if the ring is too rare or too faint |
-| Line smoothness | Smooths the waveform line. Low shows fine detail, high shows only the slow, dominant tones |
+| Bass ring reacts to | **Kick** listens for sudden hits across the low and low-mid range (40 to 800 Hz), which suits drum kicks even over loud sustained bass. **Bass** listens only to 40 to 160 Hz. Press **K** to switch |
+| Detection | How easily the ring fires (0.25 to 8). Raise it if kicks are being missed, lower it if it fires too often |
+| Ring size | How thick and long-lasting the ring is (0.5 to 8) |
+| Line smoothness | How smoothly the waveform follows changes in the strongest tone. Low reacts instantly, high glides |
 | Normalise | Subtracts each band's running average so constant noise stays quiet and sudden hits pop. Turn it off to see raw levels |
 | Always on top | Keeps the window above everything else |
 | Screen | Full window, or a pixelated preset that mimics a small display |
 | Audio | Follow the default output device, or pin a specific one |
 | Restart capture | Re-detect the output device |
 
-Keyboard shortcuts: **H** hide or show the controls, **V** switch visual, **P** next screen preset, **R** restart capture, **F11** fullscreen, **Esc** leave fullscreen.
+Keyboard shortcuts: **H** hide or show the controls, **V** switch visual, **K** switch the ring between Kick and Bass, **P** next screen preset, **R** restart capture, **F11** fullscreen, **Esc** leave fullscreen.
 
 Settings are saved to `%APPDATA%\AudioVisualiser\settings.json` when you close the window.
 
@@ -86,11 +88,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.3.0` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.4.0` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 ## Tests
