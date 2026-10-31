@@ -13,6 +13,18 @@ It captures audio with WASAPI loopback, so nothing needs to be routed through a 
 
 Screenshots use the built-in synthetic demo audio.
 
+## Pixelated screen presets
+
+Pick a **Screen** preset to see exactly what the visual would look like on a small display. The app draws at that resolution and scales it up with hard pixel edges, so you can judge a screen before buying it.
+
+| 128x64 OLED (mono) | 240x240 TFT | 480x320 TFT |
+|---|---|---|
+| ![oled](docs/pixel-oled-mono.png) | ![240](docs/pixel-240.png) | ![480](docs/pixel-480-bars.png) |
+
+Presets: 128x64 OLED (mono), 128x64 (colour), 160x128 TFT, 240x240 TFT, 320x240 TFT and 480x320 TFT. **Full window (smooth)** is the normal mode.
+
+The mono OLED preset is strictly black and white like a real SSD1306 panel, so the ring fades out instead of showing greys. All colour modes, the hex box and the sensitivity slider work in every preset.
+
 ## Download
 
 Grab `AudioVisualiser.exe` from the **Releases** page (tagged builds) or from the latest successful run under **Actions** (artifact `AudioVisualiser-windows`). There is nothing to install.
@@ -29,10 +41,11 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose **More
 | Sensitivity | How loud a band has to be to reach red in the loudness gradient |
 | Normalise | Subtracts each band's running average so constant noise stays quiet and sudden hits pop. Turn it off to see raw levels |
 | Always on top | Keeps the window above everything else |
+| Screen | Full window, or a pixelated preset that mimics a small display |
 | Audio | Follow the default output device, or pin a specific one |
 | Restart capture | Re-detect the output device |
 
-Keyboard shortcuts: **H** hide or show the controls, **V** switch visual, **R** restart capture, **F11** fullscreen, **Esc** leave fullscreen.
+Keyboard shortcuts: **H** hide or show the controls, **V** switch visual, **P** next screen preset, **R** restart capture, **F11** fullscreen, **Esc** leave fullscreen.
 
 Settings are saved to `%APPDATA%\AudioVisualiser\settings.json` when you close the window.
 
@@ -70,11 +83,11 @@ The exe appears in `dist\`.
 
 ## Releases
 
-Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`). Pushing a tag such as `v0.1.0` also publishes the exe as a GitHub release:
+Pushing to `main` runs the tests, builds the exe and smoke-tests it (`AudioVisualiser.exe --selftest`, which cycles through every screen preset). Pushing a tag such as `v0.2.0` also publishes the exe as a GitHub release:
 
 ```
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 ## Tests
@@ -90,6 +103,6 @@ The window tests need a display and are skipped automatically when there isn't o
 
 1. `capture.py` opens a WASAPI loopback stream (via PyAudioWPatch), mixes it to mono and keeps the latest 2048 samples. Output devices running at 96 kHz or 192 kHz are averaged down to about 48 kHz first.
 2. `analysis.py` applies a Blackman window and FFT, converts to decibels (-100 to -30 dB), smooths over time, and groups the result into 32 logarithmic bands from 40 Hz to 16 kHz. It also tracks a running average per band for normalisation and detects bass beats.
-3. `visuals.py` draws the two visuals on a canvas and `app.py` wires up the window and controls.
+3. `visuals.py` turns the analysis into drawing shapes (lines, rectangles, a ring). `display.py` draws them either as smooth canvas items or, for the pixel presets, through `raster.py`, a small numpy rasteriser that draws at the preset resolution. `app.py` wires up the window and controls.
 
 The analysis is deliberately the same maths the browser's Web Audio analyser uses, so a visual tuned in a web prototype looks the same here.

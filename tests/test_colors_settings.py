@@ -49,10 +49,13 @@ def test_bar_rgb_modes():
 
 def test_settings_roundtrip(tmp_path):
     path = tmp_path / "settings.json"
-    cfg = store.Settings(visual="bars", colour_mode=colors.MODE_FIXED, hex="#112233", sensitivity=2.2)
+    cfg = store.Settings(
+        visual="bars", screen="tft-240", colour_mode=colors.MODE_FIXED, hex="#112233", sensitivity=2.2
+    )
     store.save(cfg, path)
     loaded = store.load(path)
     assert loaded.visual == "bars"
+    assert loaded.screen == "tft-240"
     assert loaded.colour_mode == colors.MODE_FIXED
     assert loaded.hex == "#112233"
     assert loaded.sensitivity == 2.2
@@ -60,9 +63,12 @@ def test_settings_roundtrip(tmp_path):
 
 def test_settings_sanitise_bad_values(tmp_path):
     path = tmp_path / "settings.json"
-    path.write_text('{"visual": "nope", "colour_mode": 7, "hex": "zzz", "sensitivity": 99, "width": "x", "extra": 1}')
+    path.write_text(
+        '{"visual": "nope", "screen": "huge", "colour_mode": 7, "hex": "zzz", "sensitivity": 99, "width": "x", "extra": 1}'
+    )
     loaded = store.load(path)
     assert loaded.visual == "radial"
+    assert loaded.screen == "full"
     assert loaded.colour_mode == colors.MODE_LOUDNESS
     assert loaded.hex == store.DEFAULT_HEX
     assert loaded.sensitivity == 3.0

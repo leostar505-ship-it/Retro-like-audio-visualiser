@@ -8,7 +8,9 @@ from . import __version__, colors
 from . import settings as settings_store
 from .analysis import Analyser
 from .capture import AUTO_DEVICE, DemoSource, LoopbackCapture
-from .visuals import RENDERERS, Look
+from .display import make_display
+from .screens import SCREEN_ORDER, SCREENS, screen_from_label, screen_label
+from .visuals import VISUALS, Look
 
 BG = "#000000"
 PANEL = "#15151d"
@@ -26,7 +28,7 @@ MODE_LABELS = {
     colors.MODE_FIXED: "Custom colour",
     colors.MODE_RAINBOW: "Rainbow by frequency",
 }
-SELFTEST_FRAMES = 90
+SELFTEST_FRAMES = 110
 
 
 def reverse_lookup(table, label, default):
@@ -44,10 +46,12 @@ class App:
         self.selftest = selftest
         self.persist = persist
         self.exit_code = 0
+        self.errors = 0
         self.frames = 0
         self.fullscreen = False
         self.last = time.perf_counter()
-        self.renderer = None
+        self.visual = None
+        self.display = None
         self.after_id = None
         self.device_values = []
         self.analyser = Analyser(source.rate)
@@ -56,6 +60,7 @@ class App:
         self.look = Look(cfg.colour_mode, fixed, cfg.sensitivity)
         self._build_ui()
         self._set_visual(cfg.visual)
+        self._set_screen(cfg.screen)
         self._apply_controls_visibility()
         self.root.attributes("-topmost", cfg.topmost)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -134,8 +139,19 @@ class App:
         )
         self.top_var = tk.BooleanVar(value=cfg.topmost)
         ttk.Checkbutton(row2, text="Always on top", variable=self.top_var, command=self._on_topmost).pack(
-            side="left", padx=(14, 0)
+            side="left", padx=(14, 16)
         )
+        ttk.Label(row2, text="Screen").pack(side="left")
+        self.screen_var = tk.StringVar(value=screen_label(cfg.screen))
+        screen_box = ttk.Combobox(
+            row2,
+            textvariable=self.screen_var,
+            values=[screen_label(key) for key in SCREEN_ORDER],
+            state="readonly",
+            width=22,
+        )
+        screen_box.pack(side="left", padx=(6, 0))
+        screen_box.bind("<<ComboboxSelected>>", self._on_screen)
 
         row3 = ttk.Frame(self.controls)
         row3.pack(fill="x", pady=(8, 0))
@@ -154,6 +170,7 @@ class App:
     def _bind_keys(self):
         self.root.bind_all("<Key-h>", lambda e: self._shortcut(self.toggle_controls))
         self.root.bind_all("<Key-v>", lambda e: self._shortcut(self.cycle_visual))
+        self.root.bind_all("<Key-p>", lambda e: self._shortcut(self.cycle_screen))
         self.root.bind_all("<Key-r>", lambda e: self._shortcut(self._restart_capture))
         self.root.bind_all("<F11>", lambda e: self.toggle_fullscreen())
         self.root.bind_all("<Escape>", lambda e: self.leave_fullscreen())
@@ -189,13 +206,27 @@ class App:
         self._set_visual(nxt)
 
     def _set_visual(self, name):
-        self.canvas.delete("all")
-        self.renderer = RENDERERS[name](self.canvas)
+        self.visual = VISUALS[name]()
         self.cfg.visual = name
         self.visual_var.set(VISUAL_LABELS[name])
 
     def _on_visual(self, _event=None):
         self._set_visual(reverse_lookup(VISUAL_LABELS, self.visual_var.get(), "radial"))
+
+    def _set_screen(self, key):
+        if key not in SCREENS:
+            key = SCREEN_ORDER[0]
+        self.canvas.delete("all")
+        self.display = make_display(self.canvas, key)
+        self.cfg.screen = key
+        self.screen_var.set(screen_label(key))
+
+    def _on_screen(self, _event=None):
+        self._set_screen(screen_from_label(self.screen_var.get()))
+
+    def cycle_screen(self):
+        index = SCREEN_ORDER.index(self.cfg.screen) if self.cfg.screen in SCREEN_ORDER else 0
+        self._set_screen(SCREEN_ORDER[(index + 1) % len(SCREEN_ORDER)])
 
     def _set_mode(self, mode):
         self.look.mode = mode
@@ -254,23 +285,39 @@ class App:
             if values and self.device_var.get() not in values:
                 self.device_var.set(AUTO_DEVICE)
 
-    def tick(self):
-        started = time.perf_counter()
+    def _step(self, started):
         dt = min(0.1, max(0.001, started - self.last))
         self.last = started
         self.analyser.set_rate(self.source.rate)
         self.analyser.update(self.source.latest(), dt, started)
-        width = max(self.canvas.winfo_width(), 2)
-        height = max(self.canvas.winfo_height(), 2)
-        self.renderer.update(width, height, dt, self.analyser, self.look)
+        canvas_w = max(self.canvas.winfo_width(), 2)
+        canvas_h = max(self.canvas.winfo_height(), 2)
+        draw_w, draw_h = self.display.size(canvas_w, canvas_h)
+        prims = self.visual.frame(draw_w, draw_h, dt, self.analyser, self.look, self.display.pixel)
+        self.display.draw(prims, canvas_w, canvas_h)
         self.frames += 1
         if self.frames % 20 == 1:
             self._refresh_status()
-        if self.selftest and self.frames >= SELFTEST_FRAMES:
-            healthy = self.analyser.bands.max() > 0.05 and len(self.canvas.find_all()) > 0
-            self.exit_code = 0 if healthy else 1
-            self.close()
-            return
+
+    def tick(self):
+        started = time.perf_counter()
+        try:
+            self._step(started)
+        except Exception as exc:
+            self.errors += 1
+            self.status.configure(text="Error: %s" % exc)
+            if self.selftest:
+                self.exit_code = 1
+                self.close()
+                return
+        if self.selftest:
+            if self.frames % 10 == 0 and self.frames <= 10 * len(SCREEN_ORDER):
+                self.cycle_screen()
+            if self.frames >= SELFTEST_FRAMES:
+                healthy = self.analyser.bands.max() > 0.05 and len(self.canvas.find_all()) > 0
+                self.exit_code = 0 if healthy and self.errors == 0 else 1
+                self.close()
+                return
         elapsed_ms = (time.perf_counter() - started) * 1000.0
         self.after_id = self.root.after(max(1, int(16 - elapsed_ms)), self.tick)
 

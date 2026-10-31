@@ -37,6 +37,41 @@ def test_app_renders_each_visual_and_colour_mode(visual, mode):
     app.close()
 
 
+@pytest.mark.parametrize("screen", ["full", "oled", "oled-colour", "tft-160", "tft-240", "tft-320", "tft-480"])
+@pytest.mark.parametrize("visual", ["radial", "bars"])
+def test_app_renders_every_screen_preset(screen, visual):
+    from audiovis.app import App
+
+    root = make_root()
+    root.geometry("900x560")
+    cfg = Settings(visual=visual, screen=screen).sanitise()
+    app = App(root, DemoSource(), cfg, persist=False)
+    pump(root, 0.7)
+    assert app.frames > 3
+    assert app.display.pixel == (screen != "full")
+    assert len(app.canvas.find_all()) > 0
+    app.close()
+
+
+def test_screen_can_be_changed_while_running():
+    from audiovis.app import App
+    from audiovis.screens import SCREEN_ORDER
+
+    root = make_root()
+    root.geometry("900x560")
+    cfg = Settings().sanitise()
+    app = App(root, DemoSource(), cfg, persist=False)
+    pump(root, 0.2)
+    seen = set()
+    for _ in range(len(SCREEN_ORDER) + 1):
+        app.cycle_screen()
+        pump(root, 0.15)
+        seen.add(cfg.screen)
+    assert seen == set(SCREEN_ORDER)
+    assert cfg.screen == SCREEN_ORDER[1]
+    app.close()
+
+
 def test_hex_entry_switches_to_custom_colour():
     from audiovis.app import App
 

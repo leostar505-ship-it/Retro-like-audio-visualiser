@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from .colors import MODE_LOUDNESS, MODES, parse_hex
+from .screens import DEFAULT_SCREEN, SCREENS
 
 VISUALS = ("radial", "bars")
 DEFAULT_HEX = "#ff2d95"
@@ -12,6 +13,7 @@ DEFAULT_HEX = "#ff2d95"
 @dataclass
 class Settings:
     visual: str = "radial"
+    screen: str = DEFAULT_SCREEN
     colour_mode: str = MODE_LOUDNESS
     hex: str = DEFAULT_HEX
     sensitivity: float = 1.6
@@ -25,6 +27,8 @@ class Settings:
     def sanitise(self):
         if self.visual not in VISUALS:
             self.visual = "radial"
+        if self.screen not in SCREENS:
+            self.screen = DEFAULT_SCREEN
         if self.colour_mode not in MODES:
             self.colour_mode = MODE_LOUDNESS
         if not isinstance(self.hex, str) or parse_hex(self.hex) is None:
