@@ -30,6 +30,15 @@ def rainbow_rgb(index, count):
     return hsl_to_rgb(index / count * 300.0, 90.0, 55.0)
 
 
+def wave_rgb(dx, crossing, half):
+    d = abs(dx)
+    if d <= crossing:
+        hue = 160.0 * d / max(crossing, 1e-6)
+    else:
+        hue = 160.0 + 170.0 * min(1.0, (d - crossing) / max(half - crossing, 1e-6))
+    return hsl_to_rgb(hue, 90.0, 55.0)
+
+
 RING_RAINBOW = hsl_to_rgb(190.0, 90.0, 60.0)
 
 

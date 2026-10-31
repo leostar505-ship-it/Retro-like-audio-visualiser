@@ -141,13 +141,17 @@ class WaveRadialVisual(RadialVisual):
         amp = m * 0.16 * min(height_gain(look), 2.0)
         cy = height / 2.0
         stroke = 1.0 if pixel else max(1.5, m / 200.0)
+        crossing = m * 0.2 + self.pulse * m * 0.08
         prims = []
         for i in range(n - 1):
             x0 = i / (n - 1) * (width - 1)
             x1 = (i + 1) / (n - 1) * (width - 1)
             y0 = cy - float(scaled[i]) * amp
             y1 = cy - float(scaled[i + 1]) * amp
-            rgb = colors.bar_rgb(look.mode, i, n - 1, abs(float(scaled[i])), look.sensitivity, look.fixed)
+            if look.mode == colors.MODE_RAINBOW:
+                rgb = colors.wave_rgb((x0 + x1) / 2.0 - width / 2.0, crossing, width / 2.0)
+            else:
+                rgb = colors.bar_rgb(look.mode, i, n - 1, abs(float(scaled[i])), look.sensitivity, look.fixed)
             prims.append(line(x0, y0, x1, y1, stroke, rgb))
         return prims
 

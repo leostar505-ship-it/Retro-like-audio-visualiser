@@ -257,3 +257,19 @@ def test_sensitivity_floor_shrinks_bars():
         return max(p.c for p in prims if p.kind == "line") - 150
 
     assert bar_extent(0.05) < bar_extent(1.6)
+
+
+def test_rainbow_waveform_is_red_in_middle_cyan_at_circle_and_pink_at_ends():
+    from audiovis.visuals import WaveRadialVisual
+
+    vis = WaveRadialVisual()
+    an = wave_an(80)
+    look = Look(colors.MODE_RAINBOW, (255, 0, 0), 1.6, 1.6, 0.5)
+    prims = vis.wave_prims(600, 400, 1 / 60, an, look, False)
+    cross = 400 * 0.2
+    mid = min(prims, key=lambda p: abs((p.a + p.c) / 2 - 300))
+    at_circle = min(prims, key=lambda p: abs(abs((p.a + p.c) / 2 - 300) - cross))
+    end = min(prims, key=lambda p: (p.a + p.c) / 2)
+    assert mid.rgb[0] > 200 and mid.rgb[1] < 90 and mid.rgb[2] < 90
+    assert at_circle.rgb[1] > 200 and at_circle.rgb[2] > 120 and at_circle.rgb[0] < 120
+    assert end.rgb[0] > 200 and end.rgb[2] > 100 and end.rgb[1] < 110
