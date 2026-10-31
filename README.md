@@ -40,7 +40,7 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose **More
 | Visual | Switch between the radial spectrum and the mirrored bars |
 | Colour | Rainbow (red in the centre, through yellow, green and blue to pink at the edge of the circle, then back to red toward the window edges; the waveform uses the same gradient), loudness gradient (pink, purple, blue, green, yellow, red as it gets louder), or a custom colour |
 | Swatch / hex box | Pick a colour or type a hex code such as `#00ffaa`. Setting one switches Colour to Custom. The box turns red if the code is invalid |
-| Sensitivity | Scales how tall the bars and waveform are (0.05 to 3, default 1.6) and how loud a band has to be to reach red in the loudness gradient |
+| Sensitivity | Scales how tall the bars are (the waveform ignores it) (0.05 to 3, default 1.6) and how loud a band has to be to reach red in the loudness gradient |
 | Bass ring reacts to | **Kick** listens for sudden hits across the low and low-mid range (40 to 800 Hz), which suits drum kicks even over loud sustained bass. **Bass** listens only to 40 to 160 Hz. Press **K** to switch |
 | Detection | How easily the ring fires (0.25 to 8). Raise it if kicks are being missed, lower it if it fires too often |
 | Ring size | How thick and long-lasting the ring is (0.5 to 8) |
